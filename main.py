@@ -1,109 +1,48 @@
 from guizero import App, PushButton, Slider, Text
-from PIL import Image
-import rpi_backlight as bl
 import RPi.GPIO as GPIO
 
+class button:
+    def __init__(self,index,image,grid,gpio):
+        self.index = index
+        self.image = image
+        self.grid = grid
+        self.gpio = gpio
+
+def general_callback(n):
+    print('general_callback()',n)
+    if GPIO.input(buttons[n].gpio) == 1:
+        pushButtons[n].image = buttons[n].image+'_on.png'
+        GPIO.output(buttons[n].gpio,GPIO.LOW)
+    else:
+        pushButtons[n].image = buttons[n].image+'_off.png'
+        GPIO.output(buttons[n].gpio,GPIO.HIGH)
+        
+GPIO.setwarnings(False)        
 GPIO.setmode(GPIO.BOARD)
-
-# path = '/home/ron/TouchScreenRelayPanel/'
 path = '/home/pi/TouchScreenRelayPanel/'
-rear_light_state = 0
-front_light_state = 0
-water_pump_state = 0
-winch_state = 0
-air_state = 0
 
-def rear_light_callback():
-    global rear_light_state, rear_light_button
-    if rear_light_state == 0:
-        rear_light_state = 1
-        rear_light_button.image = path + 'rear_lights_on.png'
-        GPIO.setup(40, GPIO.OUT)
-        GPIO.output(40, GPIO.LOW)
-
-    else:
-        rear_light_state = 0
-        rear_light_button.image = path + 'rear_lights_off.png'
-        GPIO.setup(40, GPIO.OUT)
-        GPIO.output(40, GPIO.HIGH)
-
-def front_light_callback():
-    global front_light_state, front_light_button
-    if front_light_state == 0:
-        front_light_state = 1
-        front_light_button.image = path + 'front_lights_on.png'
-        GPIO.setup(38, GPIO.OUT)
-        GPIO.output(38, GPIO.LOW)
-    else:
-        front_light_state = 0
-        front_light_button.image = path + 'front_lights_off.png'
-        GPIO.setup(38, GPIO.OUT)
-        GPIO.output(38, GPIO.HIGH)
-
-
-def water_pump_callback():
-    global water_pump_state, water_pump_button
-    if water_pump_state == 0:
-        water_pump_state = 1
-        water_pump_button.image = path + 'water_pump_on.png'
-        GPIO.setup(36, GPIO.OUT)
-        GPIO.output(36, GPIO.LOW)
-    else:
-        water_pump_state = 0
-        water_pump_button.image = path + 'water_pump_off.png'
-        GPIO.setup(36, GPIO.OUT)
-        GPIO.output(36, GPIO.HIGH)
-
-
-def winch_callback():
-    global winch_state, winch_button
-    if winch_state == 0:
-        winch_state = 1
-        winch_button.image = path + 'winch_on.png'
-        GPIO.setup(37, GPIO.OUT)
-        GPIO.output(37, GPIO.LOW)
-    else:
-        winch_state = 0
-        winch_button.image = path + 'winch_off.png'
-        GPIO.setup(37, GPIO.OUT)
-        GPIO.output(37, GPIO.HIGH)
-
-def air_callback():
-    global air_state, air_button
-    if air_state == 0:
-        air_state = 1
-        air_button.image = path + 'AirSystem_on.png'
-        GPIO.setup(35, GPIO.OUT)
-        GPIO.output(35, GPIO.LOW)
-    else:
-        air_state = 0
-        air_button.image = path + 'AirSystem_off.png'
-        GPIO.setup(35, GPIO.OUT)
-        GPIO.output(35, GPIO.HIGH)
-
-
-def screen_brightness():
-    global slider
-    print(slider.value)
-    bl.set_brightness(str(slider.value))
-
+buttons = []
+# index,image,grid,gpio
+buttons.append(button(0,'rear_lights' ,[0,0],40))
+buttons.append(button(1,'front_lights',[1,0],38))
+buttons.append(button(2,'water_pump'  ,[2,0],36))
+buttons.append(button(3,'winch'       ,[0,1],37))
+buttons.append(button(4,'AirSystem'   ,[1,1],35))
+buttons.append(button(5,'AirSystem'   ,[2,1],33))
+buttons.append(button(6,'AirSystem'   ,[0,3],32))
+buttons.append(button(7,'AirSystem'   ,[1,3],31))
 
 app = App(title="Keypad example", width=480, height=320, layout="grid")
 app.bg='black'
-rear_light_button = PushButton(app, command=rear_light_callback, grid=[0,0], align='left', image = path + 'rear_lights_off.png')
-front_light_button = PushButton(app, command=front_light_callback, grid=[1,0], align='left',image = path + 'front_lights_off.png')
-water_pump_button  = PushButton(app, command=water_pump_callback, grid=[2,0], align='left',image = path + 'water_pump_off.png')
-winch_button  = PushButton(app, command=winch_callback, grid=[0,1], align='left',image = path + 'winch_off.png')
-air_button  = PushButton(app, command=air_callback, grid=[1,1], align='left',image = path + 'AirSystem_off.png')
 
-# slider = Slider(app, command=screen_brightness, grid=[0,2,3,2], align='left', start=30, end=255)
-# slider.value='255'
-# slider.resize(320, 40)
-# slider.text_color='white'
-# slider.bg='black'
+pushButtons=[]
+for button in buttons:
+    GPIO.setup(button.gpio,GPIO.OUT)
+    GPIO.output(button.gpio,GPIO.HIGH)
+    pushButtons.append(PushButton(app, args=[button.index], command=general_callback, grid=button.grid, align='left', image = path + button.image+'_off.png'))
 
 def main():
-    app.tk.attributes("-fullscreen",True)
+    #app.tk.attributes("-fullscreen",True)
     app.tk.config(cursor='none')
     app.display()
 
